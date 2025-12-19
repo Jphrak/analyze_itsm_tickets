@@ -1,0 +1,27 @@
+# Byte-compiled / caches
+__pycache__/
+*.py[cod]
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Data files - do NOT commit CSVs, JSONs, or DB files
+*.csv
+*.json
+*.db
+
+# Exports folder
+exports/
+
+# Logs
+*.log
