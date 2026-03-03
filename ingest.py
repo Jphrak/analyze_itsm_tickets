@@ -143,9 +143,10 @@ CREATE INDEX IF NOT EXISTS idx_bridge_inc ON bridge_ims_inc(incident_number);
 # Extract Functions
 # =============================================================================
 
-def find_latest_file(pattern: str) -> Optional[Path]:
+def find_latest_file(pattern: str, exports_dir: Path = None) -> Optional[Path]:
     """Find the most recent file matching the pattern in exports directory."""
-    files = sorted(EXPORTS_DIR.glob(pattern), reverse=True)
+    search_dir = exports_dir or EXPORTS_DIR
+    files = sorted(search_dir.glob(pattern), reverse=True)
     return files[0] if files else None
 
 
@@ -186,20 +187,33 @@ def extract_sysid_json(file_path: Path) -> List[Dict]:
     """
     Extract sys_id records from JSON file.
     
+    Supports multiple formats:
+        - JSON array: [{...}, {...}]
+        - Wrapped format: {"records": [{...}, ...]}
+        - NDJSON (newline-delimited): one JSON object per line
+    
     Returns list of dicts with keys including:
         interaction, task, sys_created_by, sys_created_on, sys_id
     """
     with open(file_path, 'r', encoding='utf-8') as f:
         content = f.read().strip()
+    
+    # Try parsing as a single JSON value first (array or wrapped object)
+    try:
         raw_data = json.loads(content)
-        
-        # Handle wrapped format: {"records": [...]}
         if isinstance(raw_data, dict) and 'records' in raw_data:
             data = raw_data['records']
         elif isinstance(raw_data, list):
             data = raw_data
         else:
             data = [raw_data]
+    except json.JSONDecodeError:
+        # Fall back to NDJSON (one JSON object per line)
+        data = []
+        for line in content.splitlines():
+            line = line.strip()
+            if line:
+                data.append(json.loads(line))
     
     logger.info(f"Extracted {len(data)} sys_id records from {file_path.name}")
     return data
@@ -488,7 +502,7 @@ def load_ims_inc_links(conn: sqlite3.Connection, links: List[Dict]):
 # =============================================================================
 
 def run_etl(interactions_csv: Path = None, ims_inc_csv: Path = None, 
-            sysid_json: Path = None):
+            sysid_json: Path = None, exports_dir: Path = None):
     """
     Run the complete ETL pipeline.
     
@@ -496,6 +510,7 @@ def run_etl(interactions_csv: Path = None, ims_inc_csv: Path = None,
         interactions_csv: Path to interactions CSV (auto-detect if None)
         ims_inc_csv: Path to IMS-INC CSV (auto-detect if None)
         sysid_json: Path to sys_id JSON (auto-detect if None)
+        exports_dir: Directory to search for export files (default: exports/)
     """
     logger.info("=" * 60)
     logger.info("Starting ETL Pipeline")
@@ -503,11 +518,11 @@ def run_etl(interactions_csv: Path = None, ims_inc_csv: Path = None,
     
     # Find latest files if not specified
     if not interactions_csv:
-        interactions_csv = find_latest_file("interaction_*.csv")
+        interactions_csv = find_latest_file("interaction_*.csv", exports_dir)
     if not ims_inc_csv:
-        ims_inc_csv = find_latest_file("ims_inc_*.csv")
+        ims_inc_csv = find_latest_file("ims_inc_*.csv", exports_dir)
     if not sysid_json:
-        sysid_json = find_latest_file("sysid_*.json")
+        sysid_json = find_latest_file("sysid_*.json", exports_dir)
     
     # Initialize database
     conn = init_database(DB_PATH)
@@ -597,6 +612,8 @@ def main():
                         help='Path to IMS-INC CSV file')
     parser.add_argument('--sysid', type=Path,
                         help='Path to sys_id JSON file')
+    parser.add_argument('--exports-dir', type=Path,
+                        help='Directory to search for export files (default: exports/)')
     
     args = parser.parse_args()
     
@@ -607,6 +624,7 @@ def main():
             interactions_csv=args.interactions,
             ims_inc_csv=args.ims_inc,
             sysid_json=args.sysid,
+            exports_dir=args.exports_dir,
         )
         show_stats()
 
