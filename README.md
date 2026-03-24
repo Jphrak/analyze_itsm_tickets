@@ -38,18 +38,18 @@ IT support interaction data including:
 ## 📁 Project Structure
 
 ```
-interactions/
-├── ingest.py              # Main ETL pipeline
-├── analysis.ipynb         # SQL analytics notebook
-├── interactions.db        # SQLite database (generated)
-├── exports/               # Source data files
-│   ├── interaction_*.csv  # Main interaction data
-│   ├── ims_inc_*.csv      # Interaction-Incident links
-│   └── sysid_*.json       # System IDs for URLs
-├── docs/
-│   └── SCHEMA.md          # Star schema documentation
-└── .github/
-    └── copilot-instructions.md
+analyze_itsm_tickets/
+├── ingest.py                  # Main ETL pipeline
+├── generate_sample_data.py    # Anonymized sample data generator
+├── analysis.ipynb             # SQL analytics notebook
+├── interactions.db            # SQLite database (generated, gitignored)
+├── exports/                   # Source data files (gitignored)
+│   ├── interaction_*.csv      # Main interaction data
+│   ├── ims_inc_*.csv          # Interaction-Incident links
+│   └── sysid_*.json           # System IDs for URLs
+├── SCHEMA.md                  # Star schema documentation
+├── requirements.txt           # Python dependencies
+└── pyproject.toml             # Ruff linting configuration
 ```
 
 ## ⭐ Star Schema Design
@@ -79,17 +79,37 @@ See [docs/SCHEMA.md](docs/SCHEMA.md) for the complete ER diagram.
 
 ## 🚀 Quick Start
 
-### 1. Run the ETL Pipeline
+### 1. Install Dependencies
 
 ```bash
-# Process all export files
-python ingest.py
+python -m venv .venv
+source .venv/bin/activate   # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+### 2. Generate Sample Data
+
+No real data is committed to this repo. Generate anonymized sample data first:
+
+```bash
+# Generate 100 sample records (default)
+python generate_sample_data.py
+
+# Generate more records with a fixed seed for reproducibility
+python generate_sample_data.py -n 500 --seed 42 -o exports/sample
+```
+
+### 3. Run the ETL Pipeline
+
+```bash
+# Process sample data (auto-detects latest files in exports/)
+python ingest.py --exports-dir exports/sample
 
 # View database statistics
 python ingest.py --stats
 ```
 
-### 2. Explore Analytics
+### 4. Explore Analytics
 
 Open `analysis.ipynb` in Jupyter or VS Code to explore:
 - Daily interaction trends

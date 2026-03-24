@@ -1,0 +1,45 @@
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+exclude = [
+    "__pycache__",
+    ".git",
+    ".venv",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+extend-select = [
+    "E", "W", "F", "I", "N", "UP", "B", "C4",
+    "T20", "RUF", "S", "C90", "ANN", "BLE",
+    "PERF", "SIM", "PIE", "RET", "ARG", "DTZ",
+    "PTH", "RSE", "TRY", "G", "LOG",
+]
+
+ignore = [
+    "E501",     # line length handled by formatter
+    "COM812",   # trailing comma (conflicts with formatter)
+    "ISC001",   # implicit string concat (conflicts with formatter)
+    "TRY003",   # long messages in exception constructors
+    "PLR2004",  # magic value comparisons
+    "ANN201",   # missing return type for public functions (too noisy for scripts)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"generate_sample_data.py" = [
+    "T20",   # print() is intentional output in this script
+    "S311",  # random is fine for fake data generation
+]
+"ingest.py" = [
+    "T20",   # print() used in show_stats() for CLI output
+]
+
+[tool.ruff.lint.flake8-tidy-imports]
+ban-relative-imports = "all"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
