@@ -25,3 +25,8 @@ exports/
 
 # Logs
 *.log
+
+# Generated notebook outputs
+analysis_executed.ipynb
+analysis_preview.html
+/screenshots/
